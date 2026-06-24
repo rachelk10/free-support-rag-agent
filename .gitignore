@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Data & Cache
+backend/data/rag/processed/embeddings/
+*.chroma/
+*.db
+*.sqlite
+*.sqlite3
+chroma_data/
+
+# Large files
+*.pkl
+*.pickle
+*.model
+*.bin
+*.pt
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node (if needed)
+node_modules/
+npm-debug.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup

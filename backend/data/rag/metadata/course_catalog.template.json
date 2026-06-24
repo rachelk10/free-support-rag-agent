@@ -1,0 +1,13 @@
+{
+  "courses": [
+    {
+      "course_id": "course-001",
+      "title": "שם הקורס",
+      "language": "he",
+      "files": [
+        "raw/course_materials/example-lesson-01.md"
+      ],
+      "tags": ["intro", "week-1"]
+    }
+  ]
+}

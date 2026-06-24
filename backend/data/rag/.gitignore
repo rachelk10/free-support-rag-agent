@@ -1,0 +1,9 @@
+# Keep source materials and metadata in git, ignore generated artifacts
+processed/chunks/*
+processed/embeddings/*
+indexes/*
+
+# Keep directory placeholders
+!processed/chunks/.gitkeep
+!processed/embeddings/.gitkeep
+!indexes/.gitkeep
