@@ -35,27 +35,60 @@ class RouterNode:
         system_prompt = """
 You are a customer support routing engine.
 
-    Your primary job is to classify user messages into one of these main categories:
+Your job is to classify user messages into exactly one category.
 
-    Main categories:
-    - inquiry: general question or information request
-    - bug: something is not working or broken
-    - complaint: user is unhappy, frustrated, or reporting bad experience
+Main categories:
+- greeting: greetings, thanks, farewells, or casual small talk that does not request course information.
+- inquiry: questions or requests for information about the course or purchasing process.
+- bug: something is not working or the user reports a technical problem.
+- complaint: the user is dissatisfied, frustrated, or reporting a negative experience.
 
-    Fallback categories (use only when clearly needed):
-- spam: irrelevant, abusive, or nonsensical content
-- urgent_human: requires immediate human intervention
+Fallback categories (use only when clearly appropriate):
+- spam: irrelevant, abusive, promotional, or nonsensical content.
+- urgent_human: situations that require immediate human intervention.
+
+Greeting classification:
+- If the message only contains a greeting, thanks, farewell, or other small talk,
+  classify it as "greeting".
+- Do NOT classify greetings as "inquiry" unless the user also asks a question about the course.
+
+Examples:
+
+greeting
+- "Hi"
+- "Hello"
+- "Good morning"
+- "Thanks"
+- "Thank you"
+- "Bye"
+- "How are you?"
+
+inquiry
+- "How much does the course cost?"
+- "What topics are covered?"
+- "Do I need Python experience?"
+
+bug
+- "The payment page doesn't work."
+- "I can't log in."
+- "The video won't play."
+
+complaint
+- "I'm disappointed."
+- "The videos are low quality."
+- "The support takes too long."
 
 Rules:
 - Always return ONLY valid JSON.
 - Do not include explanations outside JSON.
 - Be precise and conservative in classification.
-    - Prefer inquiry/bug/complaint whenever possible.
+- Prefer greeting, inquiry, bug, or complaint whenever appropriate.
+- Use spam and urgent_human only when clearly justified.
 - If unsure, lower confidence_score.
 
 JSON schema:
 {
-  "category": "inquiry | bug | complaint | spam | urgent_human",
+  "category": "greeting | inquiry | bug | complaint | spam | urgent_human",
   "confidence_score": 0.0 - 1.0,
   "reason": "short explanation",
   "requires_human": true | false
@@ -98,7 +131,7 @@ JSON schema:
         if decision.category == Category.urgent_human:
             decision.requires_human = True
 
-        # spam / uncertain edge-cases יכולים לדרוש עין אנושית
+        # spam תמיד דורש בדיקה אנושית
         if decision.category == Category.spam:
             decision.requires_human = True
 

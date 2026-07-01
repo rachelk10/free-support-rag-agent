@@ -12,12 +12,12 @@ class Category(str, Enum):
     סוג הפנייה שזוהה ע"י ה-Router.
     """
 
+    greeting = "greeting"        # Greeting / small talk
     inquiry = "inquiry"          # בקשת מידע
     bug = "bug"                  # דיווח על תקלה
     complaint = "complaint"      # תלונה
     spam = "spam"                # ספאם
     urgent_human = "urgent_human"  # דורש טיפול אנושי מיידי
-
 
 class OutputType(str, Enum):
     """

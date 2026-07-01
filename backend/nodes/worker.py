@@ -40,25 +40,57 @@ class WorkerNode:
         decision = state.router_decision
 
         system_prompt = """
-You are a support worker inside an AI contact center system.
+    You are a friendly, professional course support worker in an AI contact center.
 
-When course material is available, answer the user using only those documents.
-If no relevant course material exists, say so clearly and do not invent facts.
+    Conversation style:
+    - Be warm, friendly, and human.
+    - If the user only greets you, thanks you, says goodbye, or engages in small talk,
+      respond naturally in one or two short sentences.
+    - Do NOT introduce or summarize the course unless the user asks about it.
+    - Never volunteer large amounts of information that were not requested.
+    - Answer only the user's actual question.    
+    - Use a supportive, respectful tone.
+    - Be concise but helpful.
 
-Possible outputs:
-1. reply - answer the user directly
-2. github_issue - create a structured bug report
-3. blocked - refuse unsafe/spam content
-4. human_handoff - escalate to human agent
+    Business objective:
+    - Help users understand the value of the course and support purchase decisions.
+    - When users express objections, doubts, hesitation, or concerns about the course,
+      acknowledge the concern respectfully and respond with confidence.
+    - Explain course value clearly (content quality, practical value, guidance/support,
+      instructor expertise, outcomes), while staying honest and professional.
+    - Never pressure, manipulate, or use aggressive sales tactics.
 
-Rules:
-- Always return valid structured output only
-- Be concise
-- If router category is bug → github_issue
-- If router category is inquiry → reply
-- If router category is complaint → human_handoff
-- If unclear → human_handoff
-""".strip()
+    Grounding policy:
+    - If course material is provided, use it as reference only when needed to answer the user's actual question.
+    - Do not summarize retrieved course material unless the user explicitly asks for it.
+    - If a specific factual claim is not supported by the provided sources, say so clearly.
+    - For greetings and casual conversation, ignore retrieved course material and reply naturally.
+
+    Scope policy (use judgment, not keyword matching):
+    - If the user asks something clearly unrelated to the course/business context,
+      reply politely that you can help with course-related questions and purchase guidance,
+      and redirect to relevant topics.
+    - Do not escalate unrelated safe messages to a human.
+
+    Possible outputs:
+    1. reply - answer the user directly
+    2. github_issue - create a structured bug report
+    3. blocked - refuse unsafe/spam content
+    4. human_handoff - escalate to human agent
+
+    Escalation policy:
+    - Prefer reply whenever possible.
+    - Use human_handoff only when truly needed (high-risk/sensitive situations,
+      explicit request for a human, or unresolved account-specific actions you cannot perform Or requesting information that you don't have.).
+    - For complaint category, first try an empathetic, solution-oriented reply; escalate only if needed.
+
+    Routing rules:
+    - If router category is bug → prefer github_issue
+    - If router category is inquiry or complaint → prefer reply
+    - If router category is spam → blocked
+
+    Return valid structured output only.
+    """.strip()
 
         if retrieved_docs:
             sources = "\n\n".join(
@@ -69,19 +101,32 @@ Rules:
 User message:
 {state.request.message}
 
-Retrieved course material:
+Router category:
+{decision.category.value if decision else 'unknown'}
+
+Retrieved course material (reference only):
 {sources}
 
-Answer using only the provided sources. Cite each claim with the source name in brackets.
-If the answer cannot be found in the course material, say that the answer is not available.
+Respond in a warm, trustworthy tone.
+Use the retrieved material ONLY if it is needed to answer the user's question.
+Do NOT summarize the course unless the user explicitly requested course information.
+If a requested factual detail is unavailable in the provided material, say so clearly.
 """.strip()
         else:
             user_prompt = f"""
 User message:
 {state.request.message}
 
-No relevant course material was retrieved. If you cannot answer from the course material,
-state that the information is unavailable.
+Router category:
+{decision.category.value if decision else 'unknown'}
+
+No relevant course material was retrieved.
+Use judgment:
+- If this is a normal greeting/conversation turn, reply naturally and briefly.
+- If this is clearly unrelated to course support, politely decline and redirect to course topics.
+- If this is a course-related concern/objection, address it respectfully, explain value confidently,
+  and be transparent about what you can/cannot verify.
+- Escalate to human only when truly necessary.
 """.strip()
 
         return [
@@ -103,6 +148,9 @@ state that the information is unavailable.
 
         if decision and decision.category == Category.inquiry:
             retrieved_docs = self.rag.query(state.request.message, top_k=4)
+
+        if decision and decision.category == Category.greeting:
+            retrieved_docs = []
 
         messages = self.build_messages(state, retrieved_docs)
 
@@ -129,8 +177,21 @@ state that the information is unavailable.
                     "I could not find a matching answer in the course material."
                 )
 
+        if decision and decision.category == Category.complaint:
+            if result.output_type not in (OutputType.reply, OutputType.human_handoff):
+                result.output_type = OutputType.reply
+
+            if result.output_type == OutputType.reply and not result.reply_text:
+                result.reply_text = (
+                    "Thank you for sharing your concern. "
+                    "I want to help and clarify what the course includes so you can decide confidently."
+                )
+
         if result.output_type == OutputType.reply and not result.reply_text:
-            result.output_type = OutputType.human_handoff
+            result.reply_text = (
+                "I’m here to help with course-related questions. "
+                "Please share what you want to know about the course, and I’ll do my best to assist."
+            )
 
         # --------------------------------------------------------
         # Category-aligned enforcement
@@ -146,8 +207,19 @@ state that the information is unavailable.
         ):
             result.output_type = OutputType.reply
 
-        if category == Category.complaint and result.output_type != OutputType.human_handoff:
-            result.output_type = OutputType.human_handoff
+        if category == Category.complaint and result.output_type not in (
+            OutputType.reply,
+            OutputType.human_handoff,
+        ):
+            result.output_type = OutputType.reply
+
+        if category == Category.greeting:
+            result.output_type = OutputType.reply
+
+        if not result.reply_text:
+            result.reply_text = (
+            "Hello! I'm happy to help. What would you like to know about the course?"
+        )
 
         if category == Category.spam:
             result.output_type = OutputType.blocked
