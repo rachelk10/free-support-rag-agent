@@ -8,7 +8,10 @@ interface MarkdownMessageProps {
 
 export function MarkdownMessage({ content }: MarkdownMessageProps) {
   return (
-    <div className="text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+    <div
+      dir="auto"
+      className="text-sm leading-relaxed [unicode-bidi:plaintext] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

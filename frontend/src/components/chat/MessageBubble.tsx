@@ -41,7 +41,10 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           }
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+            <p
+              dir="auto"
+              className="whitespace-pre-wrap break-words text-sm leading-relaxed [unicode-bidi:plaintext]"
+            >
               {message.content}
             </p>
           ) : (
