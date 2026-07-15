@@ -60,6 +60,7 @@ class LLMService:
             model=self.model_name,
             messages=messages,
             temperature=temperature,
+            max_tokens=4000,
             response_format={
                 "type": "json_object"
             }
@@ -91,7 +92,8 @@ class LLMService:
         response = client.chat.completions.create(
             model=self.model_name,
             messages=messages,
-            temperature=temperature
+            temperature=temperature,
+            max_tokens=4000
         )
 
         return response.choices[0].message.content

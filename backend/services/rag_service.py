@@ -85,14 +85,15 @@ class RAGService:
         if self.chunks and not force:
             return self.chunks
 
-        # Try to load from semantic chunks first
-        if self.chunks_dir.exists():
-            chunks = self._load_semantic_chunks()
-            if chunks:
-                self.chunks = chunks
-                self._embed_chunks()
-                self._save_index()
-                return self.chunks
+        # Try to load from manual semantic chunks first.
+        # If manual chunks exist, do not fall back to automatic chunking.
+        semantic_chunk_files = self._semantic_chunk_files()
+        if semantic_chunk_files:
+            chunks = self._load_semantic_chunks(semantic_chunk_files)
+            self.chunks = chunks
+            self._embed_chunks()
+            self._save_index()
+            return self.chunks
 
         # Fallback to raw files
         raw_files = self._find_raw_files()
@@ -294,17 +295,25 @@ class RAGService:
         with self.index_path.open("w", encoding="utf8") as handle:
             json.dump(payload, handle, ensure_ascii=False, indent=2)
 
-    def _load_semantic_chunks(self) -> list[SemanticChunk]:
-        """Load manually created semantic chunks from chunks directory."""
+    def _semantic_chunk_files(self) -> list[Path]:
         if not self.chunks_dir.exists():
             return []
 
-        chunks: list[SemanticChunk] = []
-        chunk_files = sorted(
+        return sorted(
             path
-            for path in self.chunks_dir.glob("*.txt")
-            if path.is_file()
+            for path in self.chunks_dir.iterdir()
+            if path.is_file() and path.suffix.lower() in {".txt", ".md"}
         )
+
+    def _load_semantic_chunks(self, chunk_files: list[Path] | None = None) -> list[SemanticChunk]:
+        """Load manually created semantic chunks from chunks directory."""
+        if chunk_files is None:
+            chunk_files = self._semantic_chunk_files()
+
+        if not chunk_files:
+            return []
+
+        chunks: list[SemanticChunk] = []
 
         for chunk_file in chunk_files:
             try:
